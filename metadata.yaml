@@ -1,0 +1,6 @@
+homepage: "https://www.moveo.one"
+documentation: "https://docs.moveo.one"
+versions:
+  - sha: TBD
+    changeNotes: Initial release.
+
