@@ -1,6 +1,6 @@
 homepage: "https://www.moveo.one"
 documentation: "https://docs.moveo.one"
 versions:
-  - sha: TBD
+  - sha: bb3170ef2a11115971db0c9a2bb2f99e49a43859
     changeNotes: Initial release.
 
