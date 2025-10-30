@@ -1,12 +1,4 @@
-﻿___TERMS_OF_SERVICE___
-
-By creating or modifying this file you agree to Google Tag Manager's Community
-Template Gallery Developer Terms of Service available at
-https://developers.google.com/tag-manager/gallery-tos (or such other URL as
-Google may provide), as modified from time to time.
-
-
-___INFO___
+﻿___INFO___
 
 {
   "type": "TAG",
@@ -14,7 +6,9 @@ ___INFO___
   "version": 1,
   "securityGroups": [],
   "displayName": "MoveoOne",
-  "categories": ["ANALYTICS"],
+  "categories": [
+    "ANALYTICS"
+  ],
   "brand": {
     "id": "brand_dummy",
     "displayName": "",
@@ -57,19 +51,18 @@ ___TEMPLATE_PARAMETERS___
     "radioItems": [
       {
         "value": "A",
-        "displayValue": "Test A"
+        "displayValue": "A"
       },
       {
-        "value": "b",
-        "displayValue": "Test B"
+        "value": "B",
+        "displayValue": "B"
       },
       {
         "value": "",
         "displayValue": "No Test"
       }
     ],
-    "simpleValueType": true,
-    "defaultValue": ""
+    "simpleValueType": true
   }
 ]
 
@@ -115,7 +108,7 @@ log('MoveoOne: Setting up initialization data with token and config:', config);
 log('MoveoOne: Loading script...');
 
 // Load MoveoOne library
-const moveoScriptUrl = 'https://moveoonestoragedev.blob.core.windows.net/gtm-template-source/moveo-one-script.min.js';
+const moveoScriptUrl = 'https://moveoonestorage.blob.core.windows.net/000-scripts/moveo-one-script.min.js';
 
 injectScript(moveoScriptUrl, function() {
   log('MoveoOne: Script loaded successfully, initializing...');
@@ -227,7 +220,7 @@ ___WEB_PERMISSIONS___
             "listItem": [
               {
                 "type": 1,
-                "string": "https://moveoonestoragedev.blob.core.windows.net/gtm-template-source/moveo-one-script.min.js"
+                "string": "https://moveoonestorage.blob.core.windows.net/000-scripts/moveo-one-script.min.js"
               }
             ]
           }
@@ -246,7 +239,7 @@ ___TESTS___
 
 scenarios:
 - name: Untitled test 1
-  code: |
+  code: |-
     // MoveoOne GTM Template Test
     // Copy this into the Template Tests section in GTM Template Editor
 
