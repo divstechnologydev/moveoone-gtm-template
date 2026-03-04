@@ -28,41 +28,102 @@ ___TEMPLATE_PARAMETERS___
     "type": "TEXT",
     "name": "moveoToken",
     "simpleValueType": true,
-    "displayName": "Moveo Token"
+    "displayName": "Moveo Token",
+    "valueValidators": [
+      {
+        "type": "NON_EMPTY"
+      }
+    ]
   },
   {
     "type": "TEXT",
     "name": "appVersion",
     "displayName": "App Version",
     "simpleValueType": true,
-    "canBeEmptyString": true
-  },
-  {
-    "type": "TEXT",
-    "name": "locale",
-    "displayName": "Locale",
-    "simpleValueType": true,
-    "canBeEmptyString": true
+    "canBeEmptyString": true,
+    "defaultValue": "1.0.0",
+    "help": "Optional version string for your application (e.g. 1.2.3)."
   },
   {
     "type": "RADIO",
-    "name": "test",
-    "displayName": "A/B Test",
+    "name": "deploymentType",
+    "displayName": "Deployment Type",
+    "help": "Select 'Static Website' for standard marketing/content sites. Select 'Web App' for single-page applications or authenticated products.",
     "radioItems": [
       {
-        "value": "A",
-        "displayValue": "A"
+        "value": "STATIC_WEBSITE",
+        "displayValue": "Static Website"
       },
       {
-        "value": "B",
-        "displayValue": "B"
-      },
-      {
-        "value": "",
-        "displayValue": "No Test"
+        "value": "WEB_APP",
+        "displayValue": "Web App"
       }
     ],
-    "simpleValueType": true
+    "simpleValueType": true,
+    "defaultValue": "STATIC_WEBSITE"
+  },
+  {
+    "type": "SELECT",
+    "name": "storageSource",
+    "displayName": "User Data Storage Source",
+    "help": "Where to read user data keys from. Use 'Local Storage' for data persisted across sessions, 'Session Storage' for current-session-only data.",
+    "selectItems": [
+      {
+        "value": "local",
+        "displayValue": "Local Storage"
+      },
+      {
+        "value": "session",
+        "displayValue": "Session Storage"
+      }
+    ],
+    "simpleValueType": true,
+    "defaultValue": "local",
+    "enablingConditions": [
+      {
+        "paramName": "deploymentType",
+        "paramValue": "WEB_APP",
+        "type": "EQUALS"
+      }
+    ]
+  },
+  {
+    "type": "SIMPLE_TABLE",
+    "name": "userDataKeys",
+    "displayName": "User Data Keys",
+    "help": "Storage key names to read and attach to session metadata. Only keys that exist in storage are included; missing keys are silently skipped.",
+    "simpleTableColumns": [
+      {
+        "defaultValue": "",
+        "displayName": "Storage Key",
+        "name": "key",
+        "isUnique": true,
+        "type": "TEXT"
+      }
+    ],
+    "enablingConditions": [
+      {
+        "paramName": "deploymentType",
+        "paramValue": "WEB_APP",
+        "type": "EQUALS"
+      }
+    ]
+  },
+  {
+    "type": "CHECKBOX",
+    "name": "excludeDetailedTracking",
+    "checkboxText": "Exclude detailed tracking (appear / disappear events)",
+    "displayName": "Exclude Detailed Tracking",
+    "help": "When enabled, element appear and disappear impression events are not tracked. Useful for reducing event volume on content-heavy pages.",
+    "simpleValueType": true,
+    "defaultValue": false,
+    "enablingConditions": [
+      {
+        "paramName": "deploymentType",
+        "paramValue": "STATIC_WEBSITE",
+        "type": "EQUALS"
+      }
+    ]
   }
 ]
 
@@ -70,18 +131,18 @@ ___TEMPLATE_PARAMETERS___
 ___SANDBOXED_JS_FOR_WEB_TEMPLATE___
 
 // MoveoOne Analytics GTM Template - Sandboxed JavaScript Code
-// Copy this entire code into the GTM Template Editor Code tab
-
 const injectScript = require('injectScript');
 const callInWindow = require('callInWindow');
 const log = require('logToConsole');
+const makeTableMap = require('makeTableMap');
 
 // Get configuration from template fields
 const moveoToken = data.moveoToken;
 const appVersion = data.appVersion || '';
-const locale = data.locale || '';
-const test = data.test || ''; // A/B test identifier (A, B, or custom)
-const calculateLatency = data.calculateLatency !== false; // Default to true
+const deploymentType = data.deploymentType || 'STATIC_WEBSITE';
+const storageSource = data.storageSource || 'local';
+const userDataKeysTable = data.userDataKeys;
+const excludeDetailedTracking = data.excludeDetailedTracking === true;
 
 // Validate required token
 if (!moveoToken || moveoToken.trim() === '') {
@@ -90,32 +151,49 @@ if (!moveoToken || moveoToken.trim() === '') {
   return;
 }
 
-// Build configuration object (only allowed fields per MoveoOne validation)
+// Build configuration object
 const config = {};
+
+// App version (optional)
 if (appVersion && appVersion.trim() !== '') {
   config.appVersion = appVersion.trim();
 }
-if (locale && locale.trim() !== '') {
-  config.locale = locale.trim();
-}
-if (test && test.trim() !== '') {
-  config.test = test.trim(); // A/B test identifier
-}
-config.calculateLatency = calculateLatency;
 
-log('MoveoOne: Setting up initialization data with token and config:', config);
+// Deployment type
+config.type = deploymentType;
 
-log('MoveoOne: Loading script...');
+// Exclude detailed tracking — only relevant for STATIC_WEBSITE
+if (deploymentType === 'STATIC_WEBSITE') {
+  config.exclude_detailed_tracking = excludeDetailedTracking;
+}
+
+// Storage source and user data keys — only relevant for WEB_APP
+if (deploymentType === 'WEB_APP') {
+  config.storageSource = storageSource;
+
+  // Convert Simple Table rows into a flat array of key strings
+  if (userDataKeysTable && userDataKeysTable.length > 0) {
+    const keys = [];
+    for (var i = 0; i < userDataKeysTable.length; i++) {
+      var row = userDataKeysTable[i];
+      if (row.key && row.key.trim() !== '') {
+        keys.push(row.key.trim());
+      }
+    }
+    if (keys.length > 0) {
+      config.userDataKeys = keys;
+    }
+  }
+}
+
+log('MoveoOne: Loading script with config:', config);
 
 // Load MoveoOne library
 const moveoScriptUrl = 'https://moveoonestorage.blob.core.windows.net/000-scripts/moveo-one-script.min.js';
 
 injectScript(moveoScriptUrl, function() {
-  log('MoveoOne: Script loaded successfully, initializing...');
-  
-  // Initialize MoveoOne using callInWindow (proper GTM approach)
+  log('MoveoOne: Script loaded, initializing...');
   callInWindow('MoveoOne.init', moveoToken.trim(), config);
-  
   log('MoveoOne: Initialized successfully');
   data.gtmOnSuccess();
 }, function() {
@@ -238,32 +316,53 @@ ___WEB_PERMISSIONS___
 ___TESTS___
 
 scenarios:
-- name: Untitled test 1
+- name: Static Website initialization
   code: |-
-    // MoveoOne GTM Template Test
-    // Copy this into the Template Tests section in GTM Template Editor
-
     const mockData = {
-      // Mocked field values - these should match your template field IDs exactly
       moveoToken: 'test-token-123',
       appVersion: '1.0.0',
-      locale: 'en-US',
-      testMode: true,
-      calculateLatency: true
+      deploymentType: 'STATIC_WEBSITE'
     };
 
-    // Call runCode to run the template's code.
     runCode(mockData);
 
-    // Verify that injectScript was called
     assertApi('injectScript').wasCalled();
-
-    // Verify that logToConsole was called
     assertApi('logToConsole').wasCalled();
+
+- name: Web App initialization with local storage keys
+  code: |-
+    const mockData = {
+      moveoToken: 'test-token-456',
+      deploymentType: 'WEB_APP',
+      storageSource: 'local',
+      userDataKeys: [
+        { key: 'userId' },
+        { key: 'planType' }
+      ]
+    };
+
+    runCode(mockData);
+
+    assertApi('injectScript').wasCalled();
+    assertApi('logToConsole').wasCalled();
+
+- name: Missing token should fail
+  code: |-
+    const mockData = {
+      moveoToken: '',
+      deploymentType: 'STATIC_WEBSITE'
+    };
+
+    runCode(mockData);
+
+    assertApi('gtmOnFailure').wasCalled();
 
 
 ___NOTES___
 
-Created on 10/24/2025, 9:42:41 AM
-
-
+Updated to reflect MoveoOne script v1.0.14+:
+- Removed 'locale' and 'A/B Test' fields (no longer accepted by MoveoOne.init)
+- Added 'Deployment Type' radio (STATIC_WEBSITE / WEB_APP) mapped to config.type
+- Added 'User Data Storage Source' select (local / session), shown only for WEB_APP
+- Added 'User Data Keys' simple table, shown only for WEB_APP; rows converted to string array for config.userDataKeys
+- appVersion remains as an optional text field
