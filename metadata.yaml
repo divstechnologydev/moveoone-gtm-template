@@ -1,6 +1,9 @@
 homepage: "https://www.moveo.one"
 documentation: "https://docs.moveo.one"
 versions:
+  - sha: 38ed30f4f398a8dbc37ea460b097c967bd210913
+    changeNotes: |
+      - Added Web App support
+      - Added ability to exclude detailed tracking
   - sha: 503042cd7b1016c5164784393daf9dee3aae4bf3
     changeNotes: Initial release.
-
